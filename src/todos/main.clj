@@ -38,12 +38,12 @@ create table todos (
 (defn add-todo [todo-text]
   (jdbc/execute!
    database
-   [(format "insert into todos(text,done) values('%s',0)" todo-text)]))
+   ["insert into todos(text,done) values(?,0)" todo-text]))
 
 (defn mark-todo-done [todo-id]
   (jdbc/execute!
    database
-   [(format "update todos set done=1 where id=%d" todo-id)]))
+   ["update todos set done=1 where id=?" todo-id]))
 
 (defn all-todos []
   (->> (jdbc/execute!
