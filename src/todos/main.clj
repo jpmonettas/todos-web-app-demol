@@ -2,7 +2,6 @@
   (:require [org.httpkit.server :as http-server]
             [compojure.core :refer [GET POST routes]]
             [ring.middleware.params :refer [wrap-params]]
-            [ring.middleware.resource :refer [wrap-resource]]
             [hiccup.core :as h]
             [next.jdbc :as jdbc]
             [next.jdbc.result-set :as rs]))
@@ -63,18 +62,20 @@ create table todos (
         [:body
          [:h1 "TODOs app"]
          [:ul
-          (for [{:keys [id text done]} (all-todos)]
-            (if done
+          (->> (all-todos)
+               (map (fn [{:keys [id text done]}]
+                      (if done
 
-              ;; :li for done
-              [:li [:span text] [:span.complete "Complete"]]
+                        ;; :li for done
+                        [:li [:span text] [:span.complete "Complete"]]
 
-              ;; :li for not done
-              [:li
-               [:span text]
-               [:form {:action "/mark-done" :method "POST"}
-                [:input {:name "todo-id" :type "hidden" :value (str id)}]
-                [:input {:type "submit" :value "Mark as done"}]]]))]
+                        ;; :li for not done
+                        [:li
+                         [:span text]
+                         [:form {:action "/mark-done" :method "POST"}
+                          [:input {:name "todo-id" :type "hidden" :value (str id)}]
+                          [:input {:type "submit" :value "Mark as done"}]]])))
+               (doall))]
 
          [:form {:action "/add-todo" :method "POST"}
           [:label {:for "todo-text"} "New todo:"]
@@ -101,8 +102,7 @@ create table todos (
   (println "Starting http server")
   (http-server/run-server
    (-> #'handler
-       wrap-params
-       (wrap-resource "/publics"))
+       wrap-params)
    {:port 7744})
   (println "All done"))
 
@@ -113,17 +113,17 @@ create table todos (
 
 (comment
 
+  ;; the first time to create db, tables and pre populate with some data
+  (init-db)
+
   ;; start the http server
   (def server (http-server/run-server
                (-> #'handler
-                   wrap-params
-                   (wrap-resource "/publics"))
+                   wrap-params)
                {:port 7744}))
 
   ;; to stop the http server
   (server)
-
-  (init-db)
 
   (all-todos)
   (add-todo "a todo")
